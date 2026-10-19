@@ -100,7 +100,7 @@ func (p *tetrisPiece) keys(rot, col int) string {
 	} else {
 		keys += strings.Repeat("R", col-p.col)
 	}
-	return keys + "D"
+	return keys
 }
 
 // Each row is a bitmask, with a bit per column.
@@ -124,8 +124,8 @@ func (b *tetrisBoard) fits(f tetrisFalling) bool {
 	return true
 }
 
-// Play the keys of a single piece, returning the number of cleared lines.
-// Moves that would collide are ignored, keys after the hard drop are ignored.
+// Play the keys of a single piece then hard drop it, returning the number of
+// cleared lines. Moves that would collide are ignored.
 func (b *tetrisBoard) play(name byte, keys string) int {
 	piece := tetrisPieces[name]
 	f := tetrisFalling{piece: piece, col: piece.col}
@@ -139,15 +139,13 @@ func (b *tetrisBoard) play(name byte, keys string) int {
 			next.col++
 		case 'C':
 			next.rot = (next.rot + 1) % 4
-		case 'D':
-			return b.lock(b.drop(next))
 		}
 		if b.fits(next) {
 			f = next
 		}
 	}
 
-	return -1
+	return b.lock(b.drop(f))
 }
 
 // Hard drop a piece as far down as it goes.
@@ -269,7 +267,7 @@ func tetrisScore(b *tetrisBoard, goal *tetrisGoal, lines int) int {
 // Turn the shortest keys of a placement into something a human might press:
 // rotations & moves interleaved, wasted moves, and moves bumping into walls.
 func tetrisHumanize(keys string) string {
-	moves := []byte(strings.TrimSuffix(keys, "D"))
+	moves := []byte(keys)
 
 	for range rand.IntN(3) {
 		switch rand.IntN(4) {
@@ -289,7 +287,7 @@ func tetrisHumanize(keys string) string {
 		shuffle(moves)
 	}
 
-	return string(moves) + "D"
+	return string(moves)
 }
 
 // Play a piece & its keys the way the bot likes, returning them as a token.
@@ -347,7 +345,8 @@ func tetrisBotMove(board *tetrisBoard, goal *tetrisGoal) string {
 	want.play(choice.name, keys)
 	for range 5 {
 		noisy := tetrisHumanize(keys)
-		if got := *board; got.play(choice.name, noisy) >= 0 && got == want {
+		got := *board
+		if got.play(choice.name, noisy); got == want {
 			keys = noisy
 			break
 		}
@@ -420,12 +419,14 @@ func tetrisTryTest(name byte, rot, lines int) (test, bool) {
 		}
 	}
 
-	// Fill the stack around the answer, until it clears that many lines.
+	// Fill the stack around the answer, until it clears that many lines, and
+	// pressing no keys at all doesn't, so that answers are never empty.
 	length := randInt(4, 30)
 	for end := len(tokens) + 20; len(tokens) < end && board.stackHeight() <= tetrisMaxStack; {
 		if len(tokens) >= length {
-			b := board
-			if best, _ := tetrisBest(board, name); best == lines && b.play(name, keys) == lines {
+			b, spawn := board, board
+			if best, _ := tetrisBest(board, name); best == lines &&
+				b.play(name, keys) == lines && spawn.play(name, "") < lines {
 				return test{strings.Join(append(tokens, string(name)), " "), keys}, true
 			}
 		}
@@ -517,8 +518,7 @@ var _ = judge("tetris", perOutputJudge(func(game, userOutput, expected string) s
 	board, next := tetrisReplay(game)
 	best, keys := tetrisBest(board, next)
 
-	if strings.Trim(userOutput, "LRC") == "D" && strings.HasSuffix(userOutput, "D") &&
-		board.play(next, userOutput) == best {
+	if strings.Trim(userOutput, "LRC") == "" && board.play(next, userOutput) == best {
 		return userOutput
 	}
 

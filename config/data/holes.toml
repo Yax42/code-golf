@@ -4968,10 +4968,11 @@ synopsis = 'Find the keys to press to clear as many lines as possible with the n
 preamble = '''
 <p>
     Each argument is a game of Tetris, as a space separated list of the pieces
-    that appeared, each followed by the keys pressed while it fell. The last
-    item is the next piece, which hasn’t moved yet. Rebuild the matrix from the
-    history, then print the keys that make the next piece clear as many lines
-    as possible. Any sequence of keys clearing that many lines is accepted.
+    that appeared, each followed by the keys pressed before it dropped. The
+    last item is the next piece, which hasn’t moved yet. Rebuild the matrix
+    from the history, then print the keys that make the next piece clear as
+    many lines as possible. Any sequence of keys clearing that many lines is
+    accepted.
 
 <p>
     The matrix is 10 columns wide and 20 rows tall. Pieces use the
@@ -5007,23 +5008,20 @@ I  ....   J  #..   L  ..#   O  ##   S  .##   T  .#.   Z  ##.
                     which doesn’t move, so <b>I</b>, <b>S</b>, and <b>Z</b>
                     end up in different columns after one and three
                     rotations.
-            <tr>
-                <th>D
-                <td>
-                    Hard drop the piece as far down as it goes and lock it.
-                    This is always the last key.
     </table>
 </div>
 
 <p>
-    A move or rotation that would push the piece out of the matrix, or into
-    another block, is ignored. When a piece locks, every full row is cleared
+    After its last key, the piece is hard dropped as far down as it goes and
+    locked. A move or rotation that would push the piece out of the matrix, or
+    into another block, is ignored. When a piece locks, every full row is cleared
     and the rows above it fall down by as many rows as were cleared below.
     There are no wall kicks, no soft drops, no gravity while moving, and no
     hold.
 
 <p>
-    The next piece can always clear at least one line.
+    The next piece can always clear at least one line, and never without
+    pressing any keys.
 '''
 
 [Tic-tac-toe]
