@@ -4959,7 +4959,7 @@ preamble = '''
 
 ['Tetris']
 category = 'Gaming'
-experiment = 1 # TODO: replace with the number of the proposal issue.
+experiment = 2764
 links = [
     { name = 'Hard Drop', url = '//harddrop.com/wiki/SRS' },
     { name = 'Wikipedia', url = '//en.wikipedia.org/wiki/Tetris' },
