@@ -115,6 +115,23 @@ const addCursorsToLineEnds = (view: EditorView) => {
     return true;
 };
 
+// Upper/lower case every selection, keeping it selected (the length can change, e.g. ß → SS).
+const changeCase = (upper: boolean) => (view: EditorView) => {
+    const { state } = view;
+    if (state.selection.ranges.every(r => r.empty)) return false;
+
+    view.dispatch(state.changeByRange(range => {
+        if (range.empty) return { range };
+        const text   = state.sliceDoc(range.from, range.to);
+        const insert = upper ? text.toUpperCase() : text.toLowerCase();
+        return {
+            changes: { from: range.from, to: range.to, insert },
+            range:   EditorSelection.range(range.from, range.from + insert.length),
+        };
+    }), { scrollIntoView: true, userEvent: 'input.case' });
+    return true;
+};
+
 export const extensions : { [key: string]: any } = {
     // Extensions.
     'base': [
@@ -138,8 +155,10 @@ export const extensions : { [key: string]: any } = {
         EditorState.allowMultipleSelections.of(true),
         EditorView.clickAddsSelectionRange.of(e => e.altKey),
         keymap.of([
-            // Replace "enter" with a non auto indenting action.
-            ...historyKeymap, ...standardKeymap.filter(k => k.key != 'Enter'),
+            // Replace "enter" with a non auto indenting action. Mod-u and
+            // Alt-u (undo/redo selection) are taken by changeCase below.
+            ...historyKeymap.filter(k => k.key != 'Mod-u' && k.key != 'Alt-u'),
+            ...standardKeymap.filter(k => k.key != 'Enter'),
             { key: 'Enter', run: insertNewline },
             { key: 'Tab',   run: insertTab, shift: indentLess },
             { key: 'Mod-/', run: toggleComment },
@@ -157,6 +176,10 @@ export const extensions : { [key: string]: any } = {
             { key: 'Shift-Alt-ArrowDown', run: addCursorBelow },
             { key: 'Shift-Alt-i',         run: addCursorsToLineEnds },
             { key: 'Escape',              run: simplifySelection },
+
+            // preventDefault stops Mod-u from viewing the page source.
+            { key: 'Mod-u',       run: changeCase(false), preventDefault: true },
+            { key: 'Mod-Shift-u', run: changeCase(true),  preventDefault: true },
         ]),
         highlightWhitespace(),
     ],
